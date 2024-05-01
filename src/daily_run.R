@@ -1,11 +1,16 @@
-#### 
+####
+set.seed(123)  # Set random seed for reproducibility
 #  Simplified Version of Daily Bandit for Test Allocation
 ####
 # For the purposes of reproducibility and code sharing, this file runs our fitting and bandit procedure on some sample data
 # Sample data has been suitably anonymized.  Values do NOT represent actual data from Greece. 
 # For simplicity, this code works with cleaned sample data (hence doesn't check inputs) and produces minimal outputs
 # Actual users will likely add additional code for data-wrangling and post-processing outputs for dashboards.  
+library(conflicted)  
+
 library(tidyverse)
+conflict_prefer("filter", "dplyr")
+conflict_prefer("lag", "dplyr")
 library(lubridate)
 source("helpers_public.R")
 source("Bandit_Public.R")
@@ -115,7 +120,6 @@ hist_data <-
 hist_data <- left_join(hist_data, testing_last_48) %>%
   mutate(tests_last_48 = ifelse(is.na(tests_last_48), 0, tests_last_48))
 
-
 ######
 # EB Fitting
 #####
@@ -125,10 +129,14 @@ hist_data <- left_join(hist_data, testing_last_48) %>%
 hist_data <- mutate(hist_data, prev = num_pos/num_tested) %>% ungroup() 
 
 ##White-listed countries
-t_moments <- hist_data %>% filter(num_tested >= MIN_TEST, 
-                                  !isCtryFlagged, !isCtryGrey) %>%  
+hist_data_temp <- hist_data %>% filter(num_tested >= MIN_TEST, 
+                                       !isCtryFlagged, !isCtryGrey)
+t_moments <- hist_data_temp %>%  
   summarise(mom1 = mean(prev, na.rm=TRUE), 
-            mom2 = mean( prev * (num_pos-1)/(num_tested-1), na.rm=TRUE)
+            mom2 = mean( prev * (num_pos-1)/(num_tested-1), na.rm=TRUE),
+            meh = sum(prev, na.rm=TRUE),
+            length = length(prev),
+            hand_calculated_mom1 = sum(prev, na.rm=TRUE)/length(prev)
   )
 
 #Moment matching might fail.  These default values are tuned manually and updated periodically
@@ -276,7 +284,7 @@ pass_manifest <- pass_manifest %>%
 
 ##Write down the outputs for everyone else!
 pass_manifest %>% select(id, to_test, flagged) %>%
-  write_csv(paste("../sample_outputs/test_results_", today_dt, ".csv", sep=""))
+  write_csv(paste("../sample_outputs/r_test_results_", today_dt, ".csv", sep=""))
 
 ###The next part of the script dumps some useful tables and pictures to assess Gittins and allocations
 {

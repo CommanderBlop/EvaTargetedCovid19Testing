@@ -59,7 +59,7 @@ gittinsBandit <- function(manifest, ports, types, g){
   
   ### save initial gittins table (archival w/ date & sample outputs)
   write.csv(gittins[c("Country", "a", "b", "n", "index")], file=
-              paste("../sample_outputs/country_gittins_", today(), ".csv", sep=""), row.names=FALSE)
+              paste("../sample_outputs/r_country_gittins_", today(), ".csv", sep=""), row.names=FALSE)
   
   # remove countries with no passengers to test OR no tests left at relevant ports
   rem_ports <- ports[ports$testsLeft > 0, "portID"]
